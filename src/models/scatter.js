@@ -18,6 +18,7 @@ nv.models.scatter = function() {
         , getY         = function(d) { return d.y } // accessor to get the y value
         , getSize      = function(d) { return d.size || 1} // accessor to get the point size
         , getShape     = function(d) { return d.shape || 'circle' } // accessor to get point shape
+        , getKey       = function(d, i) { return i; } // accessor to get the key value for each point
         , forceX       = [] // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
         , forceY       = [] // List of numbers to Force into the Y scale
         , forceSize    = [] // List of numbers to Force into the Size scale
@@ -47,7 +48,7 @@ nv.models.scatter = function() {
     //------------------------------------------------------------
 
     var x0, y0, z0 // used to store previous scales
-        , timeoutID
+        //, timeoutID
         , needsUpdate = false // Flag for when the points are visually updating, but the interactive layer is behind, to disable tooltips
         , renderWatch = nv.utils.renderWatch(dispatch, duration)
         , _sizeRange_def = [16, 256]
@@ -56,6 +57,8 @@ nv.models.scatter = function() {
     function chart(selection) {
         renderWatch.reset();
         selection.each(function(data) {
+            var timeoutID;
+            var clipID = Math.floor(Math.random() * 100000);
             var container = d3.select(this);
             var availableWidth = nv.utils.availableWidth(width, container, margin),
                 availableHeight = nv.utils.availableHeight(height, container, margin);
@@ -82,14 +85,22 @@ nv.models.scatter = function() {
 
             x   .domain(xDomain || d3.extent(seriesData.map(function(d) { return d.x; }).concat(forceX)))
 
-            if (padData && data[0])
-                x.range(xRange || [(availableWidth * padDataOuter +  availableWidth) / (2 *data[0].values.length), availableWidth - availableWidth * (1 + padDataOuter) / (2 * data[0].values.length)  ]);
-            //x.range([availableWidth * .5 / data[0].values.length, availableWidth * (data[0].values.length - .5)  / data[0].values.length ]);
-            else
-                x.range(xRange || [0, availableWidth]);
+            if (x.rangeRoundPoints) {
+                x.rangeRoundPoints(xRange || [0,availableWidth],1);
+            } else {
+                if (padData && data[0]) 
+                    x.range(xRange || [(availableWidth * padDataOuter +  availableWidth) / (2 *data[0].values.length), availableWidth - availableWidth * (1 + padDataOuter) / (2 * data[0].values.length)  ]);
+                //x.range([availableWidth * .5 / data[0].values.length, availableWidth * (data[0].values.length - .5)  / data[0].values.length ]);
+                else
+                    x.range(xRange || [0, availableWidth]);
+            }
 
-            y   .domain(yDomain || d3.extent(seriesData.map(function(d) { return d.y }).concat(forceY)))
-                .range(yRange || [availableHeight, 0]);
+            y   .domain(yDomain || d3.extent(seriesData.map(function(d) { return d.y }).concat(forceY)));
+            if (y.rangeRoundPoints) {
+                y.rangeRoundPoints(yRange || [availableHeight, 0],1);
+            } else {
+                y.range(yRange || [availableHeight, 0]);
+            }
 
             z   .domain(sizeDomain || d3.extent(seriesData.map(function(d) { return d.size }).concat(forceSize)))
                 .range(sizeRange || _sizeRange_def);
@@ -134,14 +145,14 @@ nv.models.scatter = function() {
             wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
             defsEnter.append('clipPath')
-                .attr('id', 'nv-edge-clip-' + id)
+                .attr('id', 'nv-edge-clip-' + clipID)
                 .append('rect');
 
-            wrap.select('#nv-edge-clip-' + id + ' rect')
+            wrap.select('#nv-edge-clip-' + clipID + ' rect')
                 .attr('width', availableWidth)
                 .attr('height', (availableHeight > 0) ? availableHeight : 0);
 
-            g.attr('clip-path', clipEdge ? 'url(#nv-edge-clip-' + id + ')' : '');
+            g.attr('clip-path', clipEdge ? 'url(#nv-edge-clip-' + clipID + ')' : '');
 
             function updateInteractiveLayer() {
                 // Always clear needs-update flag regardless of whether or not
@@ -371,7 +382,7 @@ nv.models.scatter = function() {
                             function(pointArray, pointIndex) {
                                 return pointActive(pointArray[0], pointIndex)
                             })
-                    });
+                });
             points.enter().append('path')
                 .style('fill', function (d) { return d.color })
                 .style('stroke', function (d) { return d.color })
@@ -489,6 +500,7 @@ nv.models.scatter = function() {
         y:     {get: function(){return getY;}, set: function(_){getY = d3.functor(_);}},
         pointSize: {get: function(){return getSize;}, set: function(_){getSize = d3.functor(_);}},
         pointShape: {get: function(){return getShape;}, set: function(_){getShape = d3.functor(_);}},
+        pointKey: {get: function(){return getKey;}, set: function(_){getKey = d3.functor(_);}},
 
         // options that require extra logic in the setter
         margin: {get: function(){return margin;}, set: function(_){

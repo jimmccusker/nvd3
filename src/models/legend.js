@@ -175,14 +175,24 @@ nv.models.legend = function() {
             var legendWidth = 0;
             if (align) {
 
+                var offscreen_svg = d3.select("body")
+                    .append("svg")
+                    .style("position","absolute")
+                    .style("x",1000000);
+                
                 var seriesWidths = [];
                 series.each(function(d,i) {
                     var legendText = d3.select(this).select('text');
                     var nodeTextLength;
                     try {
                         nodeTextLength = legendText.node().getComputedTextLength();
-                        // If the legendText is display:none'd (nodeTextLength == 0), simulate an error so we approximate, instead
-                        if(nodeTextLength <= 0) throw Error();
+                        // If the legendText is display:none'd (nodeTextLength == 0),
+                        // draw the node offscreen in offscreen_svg to get exact size.
+                        if (nodeTextLength <= 0) {
+                            var n = legendText.node().cloneNode(true);
+                            offscreen_svg.node().appendChild(n);
+                            nodeTextLength = n.getComputedTextLength();
+                        }
                     }
                     catch(e) {
                         nodeTextLength = nv.utils.calcApproxTextWidth(legendText);
@@ -190,6 +200,8 @@ nv.models.legend = function() {
 
                     seriesWidths.push(nodeTextLength + padding);
                 });
+
+                offscreen_svg.remove();
 
                 var seriesPerRow = 0;
                 var columnWidths = [];

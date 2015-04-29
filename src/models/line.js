@@ -15,6 +15,8 @@ nv.models.line = function() {
         , color = nv.utils.defaultColor() // a function that returns a color
         , getX = function(d) { return d.x } // accessor to get the x value from a data point
         , getY = function(d) { return d.y } // accessor to get the y value from a data point
+        , getUpperY = null // accessor to get the area upper y value from a data point
+        , getLowerY = null // accessor to get the area lower y value from a data point
         , defined = function(d,i) { return !isNaN(getY(d,i)) && getY(d,i) !== null } // allows a line to be not continuous when it is not defined
         , isArea = function(d) { return d.area } // decides if a line is an area or just a line
         , clipEdge = false // if true, masks lines within x and y scale
@@ -120,9 +122,22 @@ nv.models.line = function() {
                         .interpolate(interpolate)
                         .defined(defined)
                         .x(function(d,i) { return nv.utils.NaNtoZero(x0(getX(d,i))) })
-                        .y0(function(d,i) { return nv.utils.NaNtoZero(y0(getY(d,i))) })
-                        .y1(function(d,i) { return y0( y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0] ) })
-                        //.y1(function(d,i) { return y0(0) }) //assuming 0 is within y domain.. may need to tweak this
+                        .y0(function(d,i) { 
+                            var value;
+                            if (getUpperY)
+                                value = getUpperY(d,i);
+                            else value = getY(d,i);
+                            return nv.utils.NaNtoZero(y0(value)); 
+                        })
+                        .y1(function(d,i) { 
+                            var value = y.domain()[0] <= 0 
+                                ? y.domain()[1] >= 0 ? 0 
+                                : y.domain()[1] : y.domain()[0];
+                            if (getLowerY) {
+                                value = getLowerY(d,i);
+                            }
+                            return nv.utils.NaNtoZero(y0(value));
+                        })
                         .apply(this, [d.values])
                 });
             groups.exit().selectAll('path.nv-area')
@@ -134,9 +149,22 @@ nv.models.line = function() {
                         .interpolate(interpolate)
                         .defined(defined)
                         .x(function(d,i) { return nv.utils.NaNtoZero(x(getX(d,i))) })
-                        .y0(function(d,i) { return nv.utils.NaNtoZero(y(getY(d,i))) })
-                        .y1(function(d,i) { return y( y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0] ) })
-                        //.y1(function(d,i) { return y0(0) }) //assuming 0 is within y domain.. may need to tweak this
+                        .y0(function(d,i) { 
+                            var value;
+                            if (getUpperY)
+                                value = getUpperY(d,i);
+                            else value = getY(d,i);
+                            return nv.utils.NaNtoZero(y0(value)); 
+                        })
+                        .y1(function(d,i) { 
+                            var value = y.domain()[0] <= 0 
+                                ? y.domain()[1] >= 0 ? 0 
+                                : y.domain()[1] : y.domain()[0];
+                            if (getLowerY) {
+                                value = getLowerY(d,i);
+                            }
+                            return nv.utils.NaNtoZero(y(value));
+                        })
                         .apply(this, [d.values])
                 });
 
@@ -214,6 +242,12 @@ nv.models.line = function() {
         y: {get: function(){return getY;}, set: function(_){
             getY = _;
             scatter.y(_);
+        }},
+        upperY: {get: function(){return getUpperY;}, set: function(_){
+            getUpperY = _;
+        }},
+        lowerY: {get: function(){return getLowerY;}, set: function(_){
+            getLowerY = _;
         }},
         color:  {get: function(){return color;}, set: function(_){
             color = nv.utils.getColor(_);
