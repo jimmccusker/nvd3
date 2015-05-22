@@ -118,11 +118,11 @@ nv.models.scatter = function() {
                     y.domain([y.domain()[0] - y.domain()[0] * 0.01, y.domain()[1] + y.domain()[1] * 0.01])
                     : y.domain([-1,1]);
 
-            if ( isNaN(x.domain()[0])) {
+            if ( x.rangeRoundPoints == null && isNaN(x.domain()[0])) {
                 x.domain([-1,1]);
             }
 
-            if ( isNaN(y.domain()[0])) {
+            if ( y.rangeRoundPoints == null &&  isNaN(y.domain()[0])) {
                 y.domain([-1,1]);
             }
 

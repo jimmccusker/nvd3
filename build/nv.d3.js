@@ -1,4 +1,4 @@
-/* nvd3 version 1.8.1 (https://github.com/novus/nvd3) 2015-04-27 */
+/* nvd3 version 1.8.1 (https://github.com/novus/nvd3) 2015-05-22 */
 (function(){
 
 // set up main nv object
@@ -10914,11 +10914,11 @@ nv.models.scatter = function() {
                     y.domain([y.domain()[0] - y.domain()[0] * 0.01, y.domain()[1] + y.domain()[1] * 0.01])
                     : y.domain([-1,1]);
 
-            if ( isNaN(x.domain()[0])) {
+            if ( x.rangeRoundPoints == null && isNaN(x.domain()[0])) {
                 x.domain([-1,1]);
             }
 
-            if ( isNaN(y.domain()[0])) {
+            if ( y.rangeRoundPoints == null &&  isNaN(y.domain()[0])) {
                 y.domain([-1,1]);
             }
 
